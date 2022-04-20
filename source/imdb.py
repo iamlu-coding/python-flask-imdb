@@ -68,10 +68,13 @@ def get_top_250_movies():
         movie_title = movie[len(str(index)) + 1:-7]
         year = re.search('\((.*?)\)', movie_string).group(1)
         place = movie[:len(str(index)) - (len(movie))]
+        # replace "'" with blanks
+        movie_title = movie_title.replace("'", '')
+        star_cast = crew[index].replace("'", '')
         data = {"movie_title": movie_title,
                 "year": year,
                 "place": place,
-                "star_cast": crew[index],
+                "star_cast": star_cast,
                 "rating": ratings[index],
                 "vote": votes[index],
                 "link": links[index]}
@@ -87,6 +90,68 @@ def get_top_250_movies():
     url = f'/imdb/top-250-movies/{msg}'
     return redirect(url)
 
+@imdb_mod.route('db-restore', methods=['POST'])
+def exec_db_restore():
+    file = request.files.get('file')
+    print(file.filename)
+    # x = file.decode('utf-8')
+    # print(x)
+    data = ''
+    for raw_data in file:
+        data += raw_data.decode('utf-8')
+        # data = data.replace("'", "''")
+    # print(data)
+    filename = file.filename.replace('-', '').split(' ')
+    new_table_name = '_'.join(['imdb_top250_movies', filename[0], filename[1][:6]])
+    data = data.replace('imdb_top250_movies', new_table_name)
+    
+    # sql statement new table
+    table_sql = '''
+        create table "public".{0}
+        (
+            index int8 null,
+            movie_title text null,
+            year text null,
+            place text null,
+            star_cast text null,
+            rating text null,
+            vote text null,
+            link text null
+        )
+    '''.format(new_table_name)
+    
+    table_exist = '''select count(*)
+        from information_schema."tables"
+        where table_name = '{0}'
+    '''.format(new_table_name)
+    
+    conn = psycopg2.connect(
+        host=DATABASE_SERVER,
+        database=DATABASE_NAME,
+        user=DATABASE_USERNAME,
+        password=DATABASE_PASSWORD,
+        port=DATABASE_PORT
+    )
+    cur = conn.cursor()
+    # check if table exist
+    cur.execute(table_exist)
+    table_exist_results = cur.fetchone()[0]
+    
+    # sql create new table
+    if table_exist_results == 0:
+        cur.execute(table_sql)
+    else:
+        sql = f"truncate table public.{new_table_name};"
+        cur.execute(sql)
+    print(data)    
+    cur.execute(data)
+    conn.commit()
+    conn.close()
+    
+    msg = 'Restore DB completed successfully!'
+    url = f'/imdb/top-250-movies/{msg}'
+    return redirect(url)
+    
 
 @imdb_mod.route('db-backup', methods=['GET'])
 def exec_db_backup():
@@ -108,11 +173,14 @@ def exec_db_backup():
     #     row = str(row).replace('None', 'null')
     #     file.write("insert into imdb_top250_movies values " + row + ";")
     # file = open(t_backup_file, 'w')
-    
+    # data2 = cur.fetchall()
+    # for row in data2:
+    #     print(row)
     # file = open(t_backup_file, 'w')
     data = ''
     for row in cur:
         row = str(row).replace('None', 'null')
+        # print(row)
         data += "insert into imdb_top250_movies values " + row + ";"
     inmemory_data = io.BytesIO(data.encode('utf-8'))    
     msg = f"Database backup successfully"
