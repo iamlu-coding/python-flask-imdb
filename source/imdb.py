@@ -1,5 +1,5 @@
 from urllib import response
-from flask import Blueprint, request, render_template, redirect
+from flask import Blueprint, request, render_template, redirect, send_file
 from bs4 import BeautifulSoup
 import requests
 import re
@@ -8,6 +8,7 @@ import sqlalchemy
 from environs import Env
 import datetime
 import psycopg2
+import io
 env = Env()
 env.read_env()
 
@@ -101,15 +102,23 @@ def exec_db_backup():
     )
     cur = conn.cursor()
     cur.execute('select * from public.imdb_top250_movies')
-    file = open(t_backup_file, 'w')
+    # file = open(t_backup_file, 'w')
+    # for row in cur:
+        
+    #     row = str(row).replace('None', 'null')
+    #     file.write("insert into imdb_top250_movies values " + row + ";")
+    # file = open(t_backup_file, 'w')
+    
+    # file = open(t_backup_file, 'w')
+    data = ''
     for row in cur:
-        
         row = str(row).replace('None', 'null')
-        file.write("insert into imdb_top250_movies values " + row + ";")
-        
+        data += "insert into imdb_top250_movies values " + row + ";"
+    inmemory_data = io.BytesIO(data.encode('utf-8'))    
     msg = f"Database backup successfully"
     url = f'/imdb/top-250-movies/{msg}'
-    return redirect(url)
+    return send_file(inmemory_data, as_attachment=True, attachment_filename=t_backup_file)
+    # return redirect(url)
 
 
 @imdb_mod.route('get-top-10-movies', methods=['GET'])
