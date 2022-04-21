@@ -93,14 +93,10 @@ def get_top_250_movies():
 @imdb_mod.route('db-restore', methods=['POST'])
 def exec_db_restore():
     file = request.files.get('file')
-    print(file.filename)
-    # x = file.decode('utf-8')
-    # print(x)
     data = ''
     for raw_data in file:
         data += raw_data.decode('utf-8')
-        # data = data.replace("'", "''")
-    # print(data)
+
     filename = file.filename.replace('-', '').split(' ')
     new_table_name = '_'.join(['imdb_top250_movies', filename[0], filename[1][:6]])
     data = data.replace('imdb_top250_movies', new_table_name)
@@ -167,26 +163,14 @@ def exec_db_backup():
     )
     cur = conn.cursor()
     cur.execute('select * from public.imdb_top250_movies')
-    # file = open(t_backup_file, 'w')
-    # for row in cur:
-        
-    #     row = str(row).replace('None', 'null')
-    #     file.write("insert into imdb_top250_movies values " + row + ";")
-    # file = open(t_backup_file, 'w')
-    # data2 = cur.fetchall()
-    # for row in data2:
-    #     print(row)
-    # file = open(t_backup_file, 'w')
+
     data = ''
     for row in cur:
         row = str(row).replace('None', 'null')
-        # print(row)
         data += "insert into imdb_top250_movies values " + row + ";"
     inmemory_data = io.BytesIO(data.encode('utf-8'))    
-    msg = f"Database backup successfully"
-    url = f'/imdb/top-250-movies/{msg}'
     return send_file(inmemory_data, as_attachment=True, attachment_filename=t_backup_file)
-    # return redirect(url)
+
 
 
 @imdb_mod.route('get-top-10-movies', methods=['GET'])
