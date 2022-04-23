@@ -172,6 +172,28 @@ def exec_db_backup():
     return send_file(inmemory_data, as_attachment=True, attachment_filename=t_backup_file)
 
 
+@imdb_mod.route('search-movies', methods=['POST'])
+def search_movies():
+    search_number = request.form['search_number']
+    if search_number == '':
+        search_number = 10
+    conn = psycopg2.connect(
+        host=DATABASE_SERVER,
+        database=DATABASE_NAME,
+        user=DATABASE_USERNAME,
+        password=DATABASE_PASSWORD,
+        port=DATABASE_PORT
+    )
+    print(search_number)
+    sql = f'select * from public.imdb_top250_movies order by cast(place as int) limit {search_number}'
+    print(sql)
+    cur = conn.cursor()
+    cur.execute(sql)
+    l = []
+    for row in cur:
+        l.append(row)
+    search_count = len(l)
+    return render_template('imdb/top_250_movies.html', top_10_list=l, search_count=search_count)
 
 @imdb_mod.route('get-top-10-movies', methods=['GET'])
 def get_top_10_movies():

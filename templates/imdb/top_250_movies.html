@@ -41,6 +41,28 @@
                 
             </div>
             <div>
+                <div class="pt-4">
+                    <form method="POST" action="{{ url_for('imdb.search_movies')}}" class="row">
+                        <div class="col-2">
+                            <label for="search_number" >Select Search Count</label>
+                        </div>
+                        <div class="col-3">
+                            
+                            <select class="form-select" aria-label="Default select example" name="search_number">
+                                <option value=""></option>
+                                <option value="10">10</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                        </div>
+                        <div class="col-3">
+                            <span> Search Count: {{search_count}}</span>
+                        </div>
+                    </form>
+                </div>
                 <table class="table">
                     <tr>
                         <th>Index</th>
